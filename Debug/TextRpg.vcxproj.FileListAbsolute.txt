@@ -1,3 +1,1 @@
 M:\YJeong\C++ Study\TextRpg\Debug\TextRpg.exe
-C:\CppStudy\TextRpg\Debug\TextRpg.exe
-M:\TextRpg_0501\Debug\TextRpg.exe
