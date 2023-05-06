@@ -1,3 +1,3 @@
-﻿  0504_TextRpg_수정.cpp
-M:\YJeong\C++ Study\TextRpg\0504_TextRpg_수정.cpp(60,1): warning C4326: 'main'의 반환 형식이 'int'이어야 하는데 'void'입니다.
+﻿  0504_TextRpg_상점추가.cpp
+M:\YJeong\C++ Study\TextRpg\Src\0504_TextRpg_상점추가.cpp(60,1): warning C4326: 'main'의 반환 형식이 'int'이어야 하는데 'void'입니다.
   TextRpg.vcxproj -> M:\YJeong\C++ Study\TextRpg\Debug\TextRpg.exe

@@ -50,10 +50,10 @@ void main(void)
 
 	FILE* pReadFile = NULL;		// 파일 스트림
 	errno_t err = fopen_s(&pReadFile, "./Data/PlayerData.txt", "rb");
-	// fread(입력할 메모리의 주소, 입력할 메모리 사이즈, 입력할 메모리 개수, 개방 스트림);
 
 	if (0 == err)
 	{
+		// fread(입력할 메모리의 주소, 입력할 메모리 사이즈, 입력할 메모리 개수, 개방 스트림);
 		fread(&tPlayer, sizeof(tPlayer), 1, pReadFile);
 		fclose(pReadFile);
 		cout << "파일 불러오기 성공 : 캐릭터 정보를 읽어옵니다..." << endl;

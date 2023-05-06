@@ -15,19 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="0501_숙제_TextRpg.cpp">
+    <ClCompile Include="Src\0501_TextRpg_파일입출력.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="0501_숙제_TextRpg_동적할당.cpp">
+    <ClCompile Include="Src\0501_TextRpg_First.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="0501_TextRpg_파일입출력.cpp">
+    <ClCompile Include="Src\0501_TextRpg_동적할당.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="0502_TextRpg_파일입출력.cpp">
+    <ClCompile Include="Src\0502_TextRpg_파일입출력 수정.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="0504_TextRpg_수정.cpp">
+    <ClCompile Include="Src\0504_TextRpg_상점추가.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
