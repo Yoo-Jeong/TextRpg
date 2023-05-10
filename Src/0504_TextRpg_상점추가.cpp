@@ -11,22 +11,32 @@
 
 using namespace std;
 
-typedef struct INFO
-{
-	char cName[32];
-	char cJob[32];
-	int iHp;
-	int iAtk;
-	int iLevel;
-	int iExp;
-	int iMoney;
 
-}INFO;
+const int iInven = 5;
 
-typedef struct ITEM
+typedef struct tagItem
 {
+	char	szName[32];
+	int		iEffect;
+	int		iPrice;
 
 }ITEM;
+
+typedef struct tagInfo
+{
+	char	szName[32];
+	char	szJob[32];
+	int		iHp;
+	int		iMaxHp;
+	int		iAtk;
+	int		iLevel;
+	int		iExp;
+	int		iMaxExp;
+	int		iMoney;
+
+	ITEM	tItem[iInven];
+
+}INFO;
 
 
 enum STATE
@@ -38,23 +48,21 @@ enum STATE
 };
 
 INFO* Select_Job();
-void	Create_Object(INFO** ppInfo, const char* pName, const char* pJob, int _iHp, int _iAtk, int _iLevel, int _iExp, int _iMoney);
+void	Create_Object(INFO** ppInfo, const char* pName, const char* pJob, int _iMaxHp, int _iAtk, int _iLevel, int _iExp, int _iMoney);
 void	Main_Game(INFO* pPlayer);
-void	Render(INFO* pinfo);
+void	Render(INFO* pInfo, bool bSelect = false);
 void	Field(INFO* pPlayer);
-void	Move(INFO* pPlayer, int _iInput);
-STATE	Battle(INFO* pPlayer, INFO* pMonster);
-void	Meet_Monster(INFO* pPlayer, INFO* pMonster, const char* _cMonsterName, const char* _cMonsterLevle, int _iMoney, int _iInput);
+STATE	Fight(INFO* pPlayer, INFO* pMonster);
+void	Level_Up(INFO* pPlayer, int _iExp);
+void	Get_Money(INFO* pPlayer, int _iMoney);
 
-void	Write_Object(INFO* pInfo);
-void	Read_Object(INFO* pInfo);
+void	Create_Item(ITEM** ppItem, const char* pName, int _iEffect, int _iPrice);
+void	Shop(INFO* pPlayer);
 
-#pragma region 맵 관련 함수 선언
-int		Create_Rand(void);
-void	Input_Array(int _iArray[], int _iSize);
-void	Shuffle(int _iArray[]);
-void	Print_Origin(int _iArray[]);
-#pragma endregion
+bool	Save_Data(INFO* pPlayer);
+bool	Load_Data(INFO** ppPlayer);
+
+
 
 void main(void)
 {
@@ -84,86 +92,81 @@ void main(void)
 INFO* Select_Job()
 {
 	INFO* pInfo = nullptr;
-	char	cName[32];
-
 	int		iInput = 0;
 	bool	bSelect = false;
-
-	FILE* pReadFile = NULL;		// 파일 스트림
-	errno_t err = fopen_s(&pReadFile, "./Data/PlayerData.txt", "rb");
-	// fread(입력할 메모리의 주소, 입력할 메모리 사이즈, 입력할 메모리 개수, 개방 스트림);
-
-	if (0 == err)
-	{
-		INFO* ppInfo = new INFO;
-		fread(ppInfo, sizeof(INFO), 1, pReadFile);
-		pInfo = &(*ppInfo);
-		cout << "파일 불러오기 성공 : 플레이어 정보를 읽어옵니다..." << endl;
-		fclose(pReadFile);
-		Render(pInfo);
-		bSelect = true;
-
-		system("pause");
-		system("cls");
-
-		return pInfo;
-	}
-	else
-	{
-		cout << "파일 불러오기 실패 : 캐릭터를 생성합니다." << endl;
-		system("pause");
-		system("cls");
-		bSelect = false;
-	}
-
+	char	cName[32];
 
 	while (!bSelect) {
 
-		cout << "닉네임을 입력해주세요 : ";
-		cin >> cName;
+		system("cls");
 
-		cout << "직업을 선택하세요" << endl
-			<< "1. 전사 2. 마법사 3. 도적 4. 종료 : ";
+		cout << "TextRpg에 오신걸 환영 합니다." << endl
+			<< "직업을 선택하세요" << endl
+			<< "1. 전사 2. 마법사 3. 도적 4. 불러오기 5. 종료 : ";
 		cin >> iInput;
 
 		switch (iInput)
 		{
 		case 1:
-			//tTemp = { "전사", 100, 10 };
+			cout << "닉네임을 입력해주세요 : ";
+			cin >> cName;
 			Create_Object(&pInfo, cName, "전사", 100, 10, 1, 0, 0);
 			bSelect = true;
 			break;
 
 		case 2:
-			//tTemp = { "마법사", 100, 10 };
+			cout << "닉네임을 입력해주세요 : ";
+			cin >> cName;
 			Create_Object(&pInfo, cName, "마법사", 100, 10, 1, 0, 0);
 			bSelect = true;
 			break;
 
 		case 3:
-			//tTemp = { "도적", 100, 10 };
+			cout << "닉네임을 입력해주세요 : ";
+			cin >> cName;
 			Create_Object(&pInfo, cName, "도적", 100, 10, 1, 0, 0);
 			bSelect = true;
 			break;
 
 		case 4:
-			bSelect = true;
+			bSelect = Load_Data(&pInfo);
+			break;
+
+		case 5:
+			bSelect = false;
 			break;
 		}
 	}
-	Write_Object(pInfo);
+
 	return pInfo;
 }
-void	Create_Object(INFO** ppInfo, const char* pName, const char* pJob, int _iHp, int _iAtk, int _iLevel, int _iExp, int _iMoney)
+void	Create_Object(INFO** ppInfo, const char* pName, const char* pJob, int _iMaxHp, int _iAtk, int _iLevel, int _iExp, int _iMoney)
 {
 	*ppInfo = new INFO;
-	strcpy_s((*ppInfo)->cName, sizeof((*ppInfo)->cName), pName);
-	strcpy_s((*ppInfo)->cJob, sizeof((*ppInfo)->cJob), pJob);
-	(*ppInfo)->iHp = _iHp;
+	strcpy_s((*ppInfo)->szName, sizeof((*ppInfo)->szName), pName);
+	strcpy_s((*ppInfo)->szJob, sizeof((*ppInfo)->szJob), pJob);
+	(*ppInfo)->iMaxHp = _iMaxHp;
+	(*ppInfo)->iHp = (*ppInfo)->iMaxHp;
 	(*ppInfo)->iAtk = _iAtk;
 	(*ppInfo)->iLevel = _iLevel;
 	(*ppInfo)->iExp = _iExp;
+	(*ppInfo)->iMaxExp = 100;
 	(*ppInfo)->iMoney = _iMoney;
+
+	for (int i = 0; i < iInven; ++i)
+	{
+		strcpy_s((*ppInfo)->tItem[i].szName, sizeof((*ppInfo)->tItem[i].szName), "없음");
+		(*ppInfo)->tItem[i].iEffect = 0;
+		(*ppInfo)->tItem[i].iPrice = 0;
+	}
+}
+void	Create_Item(ITEM** ppItem, const char* pName, int _iEffect, int _iPrice)
+{
+	*ppItem = new ITEM;
+	strcpy_s((*ppItem)->szName, sizeof((*ppItem)->szName), pName);
+	(*ppItem)->iEffect = _iEffect;
+	(*ppItem)->iPrice = _iPrice;
+
 }
 void	Main_Game(INFO* pPlayer)
 {
@@ -172,8 +175,9 @@ void	Main_Game(INFO* pPlayer)
 	while (true)
 	{
 		system("cls");
-		Render(pPlayer);
-		cout << "1. 사냥터 2. 종료 : ";
+
+		Render(pPlayer, true);
+		cout << "1. 사냥터 2. 상점 3. 종료(저장) : ";
 		cin >> iInput;
 
 		switch (iInput)
@@ -181,10 +185,13 @@ void	Main_Game(INFO* pPlayer)
 		case 1:
 			Field(pPlayer);
 			break;
+
 		case 2:
-			Write_Object(pPlayer);
-			return;
+			Shop(pPlayer);
+			break;
+
 		case 3:
+			Save_Data(pPlayer);
 			return;
 
 		default:
@@ -192,189 +199,99 @@ void	Main_Game(INFO* pPlayer)
 		}
 	}
 }
-void	Render(INFO* pinfo)
+void	Render(INFO* pInfo, bool bSelect)
 {
 	cout << "===========================================" << endl
-		<< "이름 : " << pinfo->cName << endl
-		<< "직업 : " << pinfo->cJob << "\t레벨 : " << pinfo->iLevel << "\t경험치: " << pinfo->iExp << endl
-		<< "체력 : " << pinfo->iHp << "\t공격력 : " << pinfo->iAtk << endl
-		<< "골드 : " << pinfo->iMoney<< endl;
+		<< "이름 : " << pInfo->szName << endl
+		<< "직업 : " << pInfo->szJob << "\t체력 : " << pInfo->iHp << " / " << pInfo->iMaxHp << endl
+		<< "레벨 : " << pInfo->iLevel << "\t공격력 : " << pInfo->iAtk << endl;
+
+	if (bSelect)
+	{
+		cout << "경험치: " << pInfo->iExp << " / " << pInfo->iMaxExp << endl
+			<< "골드 : " << pInfo->iMoney << endl
+			<< "인벤토리 :\t" << endl;
+
+		for (int i = 0; i < iInven; ++i)
+		{
+			cout << pInfo->tItem[i].szName << "\t";
+		}
+	}
+
+	cout << endl;
 }
 void	Field(INFO* pPlayer)
 {
 	int iInput = 0;
 
-	while (true)
-	{
-		system("cls");
-		Render(pPlayer);
-		cout << "1. 초급 사냥터 2. 중급 사냥터 3. 고급 사냥터 4. 전 단계 : ";
-		cin >> iInput;
-
-		if ((0 >= iInput) || (4 < iInput))
-			continue;
-
-		else if (4 == iInput)
-			return;
-
-		else if (4 > iInput)
-		{
-			Move(pPlayer, iInput);
-		}
-	}
-}
-void	Move(INFO* pPlayer, int _iInput)
-{
-	int			iMyArray[25] = {};
-	int			iSize = (sizeof(iMyArray)) / (sizeof(int));
-	int			iLocation = 0;
-
-	char		cInput = 'z';
-	const char* cMonsterLevle = "";
-	const char* cMonsterName = "";
-	int iMoney = 0;
-
 	INFO* pMonster = NULL;
 
-	if (1 == _iInput)
-	{
-		cMonsterName = "초급 몬스터";
-		cMonsterLevle = "초급";
-		iMoney = 100;
-	}
-	else if (2 == _iInput)
-	{
-		cMonsterName = "중급 몬스터";
-		cMonsterLevle = "중급";
-		iMoney = 300;
-	}
-	else if (3 == _iInput)
-	{
-		cMonsterName = "고급 몬스터";
-		cMonsterLevle = "고급";
-		iMoney = 900;
-	}
-
-	Input_Array(iMyArray, iSize);
+	bool	bSave = false;
 
 	while (true)
 	{
 		system("cls");
-		Render(pPlayer);
-		cout << endl << "\t" << "================" << cMonsterLevle << " 사냥터 ================" << endl << endl;
+		Render(pPlayer, true);
 
-		// 5 * 5 출력
-		Print_Origin(iMyArray);
+		cout << "1. 초급 2. 중급 3. 고급 4. 저장하기 5. 전 단계 : ";
+		cin >> iInput;
 
-		cout << "q 전 단계" << endl << endl
-			<< "\tw 위" << endl
-			<< "a 왼쪽\t\td 오른쪽" << endl
-			<< "\ts 아래" << endl
-			<< " : ";
-		cin >> cInput;
-
-		// 1 자리 찾기.
-		for (int i = 0; i < iSize; ++i)
+		switch (iInput)
 		{
-			if (8 == iMyArray[i])
-				iLocation = i;
-		}
+		case 1:
+			Create_Object(&pMonster, "초급 몬스터", "초급", (30 * iInput), (3 * iInput), (3 * iInput), (30 * iInput), (100 * iInput));
+			break;
 
-		//2번 아래 이동
-		if ('s' == cInput)
-		{
-			if (iLocation < (iSize - 5))
-			{
-				int iTemp = 0;
+		case 2:
+			Create_Object(&pMonster, "중급 몬스터", "중급", (30 * iInput), (3 * iInput), (3 * iInput), (30 * iInput), (100 * iInput));
+			break;
 
-				iTemp = iMyArray[iLocation];
-				iMyArray[iLocation] = iMyArray[iLocation + 5];
-				iMyArray[iLocation + 5] = iTemp;
+		case 3:
+			Create_Object(&pMonster, "고급 몬스터", "고급", (30 * iInput), (3 * iInput), (3 * iInput), (30 * iInput), (100 * iInput));
+			break;
 
-				//	교환 자리의 값이 15 이상이면 그 자리에 몬스터 생성
-				//	1값의 자리와 15이상인 자리와 교환되면 전투 발생
-				if (15 <= (iMyArray[iLocation]))
-				{
-					Meet_Monster(pPlayer, pMonster, cMonsterName, cMonsterLevle, iMoney, _iInput);
-					iMyArray[iLocation] = 0;
-				}
-			}
-		}
+		case 4:
+			bSave = Save_Data(pPlayer);
+			break;
 
-		//4번 왼쪽 이동
-		if ('a' == cInput)
-		{
-			int iTemp = 0;
-			if (0 < iLocation)
-			{
-				// (iLocation - 1)이 (4, 9, 14, 19, 24)가 되면 안됨.
-				if (4 != ((iLocation - 1) % 5))
-				{
-					iTemp = iMyArray[iLocation];
-					iMyArray[iLocation] = iMyArray[iLocation - 1];
-					iMyArray[iLocation - 1] = iTemp;
-
-					if (15 <= (iMyArray[iLocation]))
-					{
-						Meet_Monster(pPlayer, pMonster, cMonsterName, cMonsterLevle, iMoney, _iInput);
-						iMyArray[iLocation] = 0;
-					}
-				}
-			}
-		}
-
-		//6번 오른쪽 이동
-		if ('d' == cInput)
-		{
-			int iTemp = 0;
-			if (iLocation < (iSize - 1))
-			{
-				// (iLocation + 1)이 5의 배수가 되면 안됨.(0, 5, 10, 15, 20)
-				if (0 != ((iLocation + 1) % 5))
-				{
-					iTemp = iMyArray[iLocation];
-					iMyArray[iLocation] = iMyArray[iLocation + 1];
-					iMyArray[iLocation + 1] = iTemp;
-
-					if (15 <= (iMyArray[iLocation]))
-					{
-						Meet_Monster(pPlayer, pMonster, cMonsterName, cMonsterLevle, iMoney, _iInput);
-						iMyArray[iLocation] = 0;
-					}
-				}
-			}
-		}
-
-		//8번 위로 이동
-		if ('w' == cInput)
-		{
-			int iTemp = 0;
-			if (0 < iLocation)
-			{
-				iTemp = iMyArray[iLocation];
-				iMyArray[iLocation] = iMyArray[iLocation - 5];
-				iMyArray[iLocation - 5] = iTemp;
-
-				if (15 <= (iMyArray[iLocation]))
-				{
-					Meet_Monster(pPlayer, pMonster, cMonsterName, cMonsterLevle, iMoney, _iInput);
-					iMyArray[iLocation] = 0;
-				}
-			}
-		}
-		if ('q' == cInput)
+		case 5:
 			return;
+		}
+
+		if (bSave)
+		{
+			bSave = false;
+			continue;
+		}
+
+		STATE	eState = Fight(pPlayer, pMonster);
+
+		if (LOSE == eState)
+		{
+			pPlayer->iHp = pPlayer->iMaxHp;
+		}
+
+		if (RUN == eState || WIN == eState)
+		{
+			if (NULL != pMonster)
+			{
+				delete pMonster;
+				pMonster = NULL;
+			}
+		}
 	}
 }
-STATE	Battle(INFO* pPlayer, INFO* pMonster)
+
+STATE	Fight(INFO* pPlayer, INFO* pMonster)
 {
 	int iInput = 0;
 
 	while (true)
 	{
 		system("cls");
-		Render(pPlayer);
+		Render(pPlayer, true);
 		Render(pMonster);
+
 		cout << "1. 공격 2. 도망 : ";
 		cin >> iInput;
 
@@ -387,41 +304,21 @@ STATE	Battle(INFO* pPlayer, INFO* pMonster)
 			// 플레이어의 체력이 0이하면 플레이어 사망
 			if (0 >= pPlayer->iHp)
 			{
-				//(_pPlayer->iHP) = 100;
-				cout << endl << "플레이어 사망..." << endl << "경험치 - 10" << endl;
+				cout << "플레이어 사망..." << endl;
 				system("pause");
 
 				return LOSE;
 			}
 
-			// 플레이어의 체력이 0이상이고, 몬스터의 체력이 0이하면 승리
-			if ((0 <= pPlayer->iHp) && (0 >= pMonster->iHp))
+			// 몬스터의 체력이 0이하면 승리
+			if (0 >= pMonster->iHp)
 			{
-				pPlayer->iExp += pMonster->iExp; // 경험치 획득
-				pPlayer->iMoney += pMonster->iMoney;
-				cout << pMonster->iMoney << "골드 획득" << endl << endl;
+				cout << "승리" << endl;
 
-				cout << endl << "승리" << endl;
-
-				// 경험치가 100이상이면 레벨업
-				if (100 <= pPlayer->iExp)
-				{
-					(pPlayer->iLevel)++;
-					pPlayer->iExp -= 100;
-					cout << endl << "레벨업!" << endl;
-
-					if (0 == (pPlayer->iLevel) % 3) // 3레벨 올릴때마다 공격력 5증가
-					{
-						pPlayer->iAtk += 5;
-						cout << "+ 공격력 5증가" << endl;
-
-						if (80 <= (pPlayer->iAtk)) // 공격력은 80까지만 증가
-						{
-							pPlayer->iAtk = 80;
-						}
-					}
-				}
+				Level_Up(pPlayer, pMonster->iExp);
+				Get_Money(pPlayer, pMonster->iMoney);
 				system("pause");
+
 				return WIN;
 			}
 		}
@@ -430,142 +327,133 @@ STATE	Battle(INFO* pPlayer, INFO* pMonster)
 	}
 }
 
-void Meet_Monster(INFO* pPlayer, INFO* pMonster, const char* _cMonsterName, const char* _cMonsterLevle, int _iMoney ,int _iInput)
+void	Level_Up(INFO* pPlayer, int _iExp)
 {
-	cout << "\t==============몬스터 등장!==============" << endl;
-	system("pause");
+	pPlayer->iExp += _iExp; // 경험치 획득
 
-	STATE eState;
-
-	Create_Object(&pMonster, _cMonsterName, _cMonsterLevle, (30 * _iInput), (3 * _iInput), (3 * _iInput), (30 * _iInput), _iMoney);
-	eState = Battle(pPlayer, pMonster);
-
-	if (LOSE == eState)
+	// 경험치가 100이상이면 레벨업
+	if (pPlayer->iMaxExp <= pPlayer->iExp)
 	{
-		pPlayer->iHp = 100;
-
-		if (10 <= (pPlayer->iExp))
-			pPlayer->iExp -= 10;
-		else
-			pPlayer->iExp = 0;
-
-		return;
-	}
-
-	if (RUN == eState || WIN == eState)
-	{
-		if (NULL != pMonster)
+		if (!strcmp(pPlayer->szJob, "전사"))
 		{
-			delete pMonster;
-			pMonster = NULL;
+			pPlayer->iAtk += 10;
+			pPlayer->iMaxHp += 20;
+			pPlayer->iMaxExp += 50;
+		}
+		else if (!strcmp(pPlayer->szJob, "마법사"))
+		{
+			pPlayer->iAtk += 25;
+			pPlayer->iMaxHp += 10;
+			pPlayer->iMaxExp += 50;
+
+		}
+		else if (!strcmp(pPlayer->szJob, "도적"))
+		{
+			pPlayer->iAtk += 15;
+			pPlayer->iMaxHp += 15;
+			pPlayer->iMaxExp += 50;
+		}
+
+		(pPlayer->iLevel)++;			// 레벨업
+		pPlayer->iHp = pPlayer->iMaxHp; // 체력 풀 회복
+		pPlayer->iExp = 0;				// 현재 경험치 0
+
+		cout << "레벨업!" << endl;
+	}
+}
+
+void	Get_Money(INFO* pPlayer, int _iMoney)
+{
+	pPlayer->iMoney += _iMoney;		// 돈 획득
+
+	cout << _iMoney << "골드 획득" << endl;
+}
+
+
+void	Shop(INFO* pPlayer)
+{
+	int iInput = 0;
+
+	while (true)
+	{
+		system("cls");
+		Render(pPlayer);
+		cout << endl << "상점에 오신 걸 환영합니다." << endl << endl;
+		cout << "1. HP포션 4. 전 단계 : ";
+		cin >> iInput;
+
+		if ((0 >= iInput) || (4 < iInput))
+			continue;
+
+		else if (4 == iInput)
+			return;
+
+		else if (4 > iInput)
+		{
+
 		}
 	}
 }
 
-void Write_Object(INFO* pInfo)
+
+bool Save_Data(INFO* pPlayer)
 {
-	// 파일 스트림
-	FILE* pFile = NULL;
-	// 1. 파일 스트림 생성(쓰기 전용 텍스트 모드)
-	errno_t err = fopen_s(&pFile, "./Data/PlayerData.txt", "wb");
+
+	FILE* pFile = nullptr;	// 파일 스트림
+
+	errno_t err = fopen_s(&pFile, "./Data/Save.txt", "wb");
 
 	if (0 == err)
 	{
-		//	// 2. 파일에 쓰거나 읽기 함수를 호출
-		fwrite(pInfo->cName, sizeof(pInfo->cName), 1, pFile);
-		fwrite(pInfo->cJob, sizeof(pInfo->cJob), 1, pFile);
-		fwrite(&pInfo->iHp, sizeof(int), 1, pFile);
-		fwrite(&pInfo->iAtk, sizeof(int), 1, pFile);
-		fwrite(&pInfo->iLevel, sizeof(int), 1, pFile);
-		fwrite(&pInfo->iExp, sizeof(int), 1, pFile);
-		fwrite(&pInfo->iMoney, sizeof(int), 1, pFile);
+		// 2. 파일에 쓰거나 읽기 함수를 호출
+		fwrite(pPlayer, sizeof(INFO), 1, pFile);
+
 		cout << "캐릭터 정보 저장 성공" << endl;
+
+		fclose(pFile);
+
 		system("pause");
-		fclose(pFile);	//3. 파일을 소멸
+
+		return true;
 	}
 	else
-	{
 		cout << "캐릭터 정보 저장 실패" << endl;
-		system("pause");
-	}
+
+	system("pause");
+
+	return false;
+
 }
-void Read_Object(INFO* pInfo)
+
+bool	Load_Data(INFO** ppPlayer)
 {
-	FILE* pReadFile = NULL;		// 파일 스트림
-	errno_t err = fopen_s(&pReadFile, "./Data/PlayerData.txt", "rb");
-	
+	(*ppPlayer) = new INFO;
+
+	FILE* pFile = nullptr;		// 파일 스트림
+
+	errno_t err = fopen_s(&pFile, "./Data/Save.txt", "rb");
+
 	if (0 == err)
 	{
-		INFO* ppInfo = new INFO;
-	 // fread(입력할 메모리의 주소, 입력할 메모리 사이즈, 입력할 메모리 개수, 개방 스트림);
-		fread(ppInfo, sizeof(INFO), 1, pReadFile);
-		fclose(pReadFile);
-		pInfo = &(*ppInfo);
+		// fread(입력할 메모리의 주소, 입력할 메모리 사이즈, 입력할 메모리 개수, 개방 스트림);
+		fread((*ppPlayer), sizeof(INFO), 1, pFile);
+
 		cout << "파일 불러오기 성공 : 캐릭터 정보를 읽어옵니다..." << endl;
-		Render(pInfo);
+		fclose(pFile);
 
 		system("pause");
-		system("cls");
+
+		return true;
 	}
 	else
 	{
 		cout << "파일 불러오기 실패" << endl;
 		system("pause");
-		system("cls");
+
+		return false;
 	}
+
+	return false;
 }
 
 
-#pragma region 맵 관련 함수 구현
-
-void Input_Array(int _iArray[], int _iSize)	// 배열에 값을 넣는다.
-{
-	for (int i = 0; i < _iSize; ++i)
-	{
-		_iArray[i] = i + 1;
-	}
-	Shuffle(_iArray); // 자리 섞기
-}
-void Print_Origin(int _iArray[])	// 5 * 5 사이즈 출력 : 1(플레이어)가 아니면 *로 출력한다.
-{
-	for (int i = 0; i < 5; ++i)
-	{
-		for (int j = 0; j < 5; ++j)
-		{
-			int iIndex = (i * 5) + j;
-
-			if (0 == (_iArray[iIndex]))
-			{
-				cout << "\t" << "    " << "0";
-			}
-			else if (8 != (_iArray[iIndex]))
-			{
-				cout << "\t" << "    " << "*";
-				//cout << "\t" << "    " << (_iArray[iIndex]);
-			}
-			else
-			{
-				cout << "\t" << "    " << (_iArray[iIndex]);
-			}
-		}
-		cout << endl << endl;
-	}
-}
-int Create_Rand(void)	// 랜덤값 리턴
-{
-	return rand() % 25 + 1;
-}
-void Shuffle(int _iArray[])	// 자리 섞기
-{
-	for (int i = 0; i < 50; ++i)
-	{
-		int iDst = Create_Rand();
-		int iSrc = Create_Rand();
-
-		int iTemp = _iArray[iDst - 1];
-		_iArray[iDst - 1] = _iArray[iSrc - 1];
-		_iArray[iSrc - 1] = iTemp;
-	}
-}
-
-#pragma endregion

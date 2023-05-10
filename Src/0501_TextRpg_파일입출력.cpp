@@ -35,7 +35,7 @@ void Create_Object(INFO _pMonster[]);
 void Battle(INFO* _pPlayer, INFO* _pMonster);
 
 void Write_Object(INFO* _tObject);
-void Read_Object(INFO* _tObject);
+void Load_Data(INFO* _tObject);
 
 void main(void)
 {
@@ -519,7 +519,7 @@ void Write_Object(INFO* _Object)
 	}
 }
 
-void Read_Object(INFO* _tObject)
+void Load_Data(INFO* _tObject)
 {
 	FILE* pReadFile = NULL;		// 파일 스트림
 	errno_t err = fopen_s(&pReadFile, "./Data/PlayerData.txt", "rb");

@@ -31,7 +31,9 @@
     <ClCompile Include="Src\0502_TextRpg_파일입출력 수정.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Src\0504_TextRpg_상점추가.cpp" />
+    <ClCompile Include="Src\0504_TextRpg_상점추가.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

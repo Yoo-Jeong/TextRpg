@@ -39,7 +39,7 @@ void	Move(INFO* pPlayer, int _iInput);
 STATE	Battle(INFO* pPlayer, INFO* pMonster);
 
 void	Write_Object(INFO* pInfo);
-void	Read_Object(INFO* pInfo);
+void	Load_Data(INFO* pInfo);
 
 #pragma region 맵 관련 함수 선언
 int		Create_Rand(void);
@@ -268,7 +268,7 @@ void	Move(INFO* pPlayer, int _iInput)
 				iLocation = i;
 		}
 
-		//2번 아래 이동
+		//s 아래 이동
 		if ('s' == cInput)
 		{
 			if (iLocation < (iSize - 5))
@@ -316,7 +316,7 @@ void	Move(INFO* pPlayer, int _iInput)
 		}
 
 
-		//4번 왼쪽 이동
+		//a 왼쪽 이동
 		if ('a' == cInput)
 		{
 			int iTemp = 0;
@@ -363,7 +363,7 @@ void	Move(INFO* pPlayer, int _iInput)
 			}
 		}
 
-		//6번 오른쪽 이동
+		//d 오른쪽 이동
 		if ('d' == cInput)
 		{
 			int iTemp = 0;
@@ -411,7 +411,7 @@ void	Move(INFO* pPlayer, int _iInput)
 			}
 		}
 
-		//8번 위로 이동
+		//w 위로 이동
 		if ('w' == cInput)
 		{
 			int iTemp = 0;
@@ -547,7 +547,7 @@ void Write_Object(INFO* pInfo)
 		system("pause");
 	}
 }
-void Read_Object(INFO* pInfo)
+void Load_Data(INFO* pInfo)
 {
 	FILE* pReadFile = NULL;		// 파일 스트림
 	errno_t err = fopen_s(&pReadFile, "./Data/PlayerData.txt", "rb");
