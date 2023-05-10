@@ -19,6 +19,8 @@ typedef struct tagItem
 	char	szName[32];
 	int		iEffect;
 	int		iPrice;
+	int		iCount;
+	int		iMaxCount;
 
 }ITEM;
 
@@ -56,8 +58,10 @@ STATE	Fight(INFO* pPlayer, INFO* pMonster);
 void	Level_Up(INFO* pPlayer, int _iExp);
 void	Get_Money(INFO* pPlayer, int _iMoney);
 
-void	Create_Item(ITEM** ppItem, const char* pName, int _iEffect, int _iPrice);
+void	Create_Item(ITEM** ppItem, const char* pName, int _iEffect, int _iPrice, int _iCount);
 void	Shop(INFO* pPlayer);
+void	Buy_Item(INFO* pPlayer, ITEM* pItem, int _iInput);
+void	Use_Item(INFO* pPlayer);
 
 bool	Save_Data(INFO* pPlayer);
 bool	Load_Data(INFO** ppPlayer);
@@ -105,25 +109,25 @@ INFO* Select_Job()
 			<< "1. 전사 2. 마법사 3. 도적 4. 불러오기 5. 종료 : ";
 		cin >> iInput;
 
+		if (4 > iInput)
+		{
+			cout << "닉네임을 입력해주세요 : ";
+			cin >> cName;
+		}
+
 		switch (iInput)
 		{
 		case 1:
-			cout << "닉네임을 입력해주세요 : ";
-			cin >> cName;
 			Create_Object(&pInfo, cName, "전사", 100, 10, 1, 0, 0);
 			bSelect = true;
 			break;
 
 		case 2:
-			cout << "닉네임을 입력해주세요 : ";
-			cin >> cName;
 			Create_Object(&pInfo, cName, "마법사", 100, 10, 1, 0, 0);
 			bSelect = true;
 			break;
 
 		case 3:
-			cout << "닉네임을 입력해주세요 : ";
-			cin >> cName;
 			Create_Object(&pInfo, cName, "도적", 100, 10, 1, 0, 0);
 			bSelect = true;
 			break;
@@ -137,7 +141,6 @@ INFO* Select_Job()
 			break;
 		}
 	}
-
 	return pInfo;
 }
 void	Create_Object(INFO** ppInfo, const char* pName, const char* pJob, int _iMaxHp, int _iAtk, int _iLevel, int _iExp, int _iMoney)
@@ -158,14 +161,18 @@ void	Create_Object(INFO** ppInfo, const char* pName, const char* pJob, int _iMax
 		strcpy_s((*ppInfo)->tItem[i].szName, sizeof((*ppInfo)->tItem[i].szName), "없음");
 		(*ppInfo)->tItem[i].iEffect = 0;
 		(*ppInfo)->tItem[i].iPrice = 0;
+		(*ppInfo)->tItem[i].iCount = 0;
+		(*ppInfo)->tItem[i].iMaxCount = 99;
 	}
 }
-void	Create_Item(ITEM** ppItem, const char* pName, int _iEffect, int _iPrice)
+void Create_Item(ITEM** ppItem, const char* pName, int _iEffect, int _iPrice, int _iCount)
 {
 	*ppItem = new ITEM;
 	strcpy_s((*ppItem)->szName, sizeof((*ppItem)->szName), pName);
 	(*ppItem)->iEffect = _iEffect;
 	(*ppItem)->iPrice = _iPrice;
+	(*ppItem)->iCount = _iCount;
+	(*ppItem)->iMaxCount = 99;
 
 }
 void	Main_Game(INFO* pPlayer)
@@ -210,11 +217,18 @@ void	Render(INFO* pInfo, bool bSelect)
 	{
 		cout << "경험치: " << pInfo->iExp << " / " << pInfo->iMaxExp << endl
 			<< "골드 : " << pInfo->iMoney << endl
-			<< "인벤토리 :\t" << endl;
+			<< "인벤토리 :\t";
 
 		for (int i = 0; i < iInven; ++i)
 		{
-			cout << pInfo->tItem[i].szName << "\t";
+			if (!strcmp(pInfo->tItem[i].szName, "없음") || (0 == pInfo->tItem[i].iCount))
+			{
+				cout << "□\t";
+			}
+			else
+			{
+				cout << pInfo->tItem[i].szName << "*" << pInfo->tItem[i].iCount << "\t";
+			}
 		}
 	}
 
@@ -292,7 +306,7 @@ STATE	Fight(INFO* pPlayer, INFO* pMonster)
 		Render(pPlayer, true);
 		Render(pMonster);
 
-		cout << "1. 공격 2. 도망 : ";
+		cout << "1. 공격 2. 아이템사용 3. 도망 : ";
 		cin >> iInput;
 
 		if (1 == iInput) // 1. 공격 이면
@@ -323,6 +337,11 @@ STATE	Fight(INFO* pPlayer, INFO* pMonster)
 			}
 		}
 		else if (2 == iInput)
+		{
+			Use_Item(pPlayer);
+		}
+
+		else if (3 == iInput)
 			return RUN;
 	}
 }
@@ -372,29 +391,117 @@ void	Get_Money(INFO* pPlayer, int _iMoney)
 
 void	Shop(INFO* pPlayer)
 {
+	ITEM* pItem = NULL;
+
 	int iInput = 0;
 
 	while (true)
 	{
 		system("cls");
-		Render(pPlayer);
+		Render(pPlayer, true);
+
 		cout << endl << "상점에 오신 걸 환영합니다." << endl << endl;
-		cout << "1. HP포션 4. 전 단계 : ";
+		cout << "1. HP포션(300G) 4. 전 단계 : ";
 		cin >> iInput;
 
-		if ((0 >= iInput) || (4 < iInput))
-			continue;
+		switch (iInput)
+		{
+		case 1:
+			Create_Item(&pItem, "HP포션", 20, 300, 1);
+			Buy_Item(pPlayer, pItem, iInput);
 
-		else if (4 == iInput)
+			delete pItem;
+			pItem = NULL;
+
+			break;
+
+		case 2:
+
+			break;
+
+		case 3:
+
+			break;
+
+		case 4:
 			return;
 
-		else if (4 > iInput)
-		{
-
 		}
+
 	}
+
 }
 
+void	Buy_Item(INFO* pPlayer, ITEM* pItem, int _iInput)
+{
+	int iIndex = _iInput - 1;
+
+	if (pPlayer->iMoney >= pItem->iPrice)
+	{
+		pPlayer->iMoney -= pItem->iPrice;
+
+		strcpy_s(pPlayer->tItem[_iInput - 1].szName, pItem->szName);
+		pPlayer->tItem[iIndex].iEffect = pItem->iEffect;
+		pPlayer->tItem[iIndex].iPrice = pItem->iPrice;
+		pPlayer->tItem[iIndex].iCount += pItem->iCount;	// 개수 기존에서+
+		pPlayer->tItem[iIndex].iMaxCount = pItem->iMaxCount;
+
+		cout << "구매 성공" << endl;
+		system("pause");
+
+		Render(pPlayer, true);
+	}
+	else
+	{
+		cout << "소지금이 부족합니다." << endl;
+		system("pause");
+	}
+
+}
+
+void	Use_Item(INFO* pPlayer)
+{
+	int iInput = 0;
+
+	cout << endl << "1. HP포션(체력 20회복)" << endl
+		<< "2. 아이템 사용 취소" << endl
+		<< "어떤 아이템을 사용하시겠습니까? : ";
+
+	cin >> iInput;
+
+	switch (iInput)
+	{
+
+	case 1:
+		if ((!strcmp(pPlayer->tItem[0].szName, "HP포션")) && (0 < pPlayer->tItem[0].iCount))
+		{
+			pPlayer->iHp += pPlayer->tItem[0].iEffect;
+			pPlayer->tItem[0].iCount -= 1;
+
+			if (pPlayer->iHp > pPlayer->iMaxHp)
+			{
+				pPlayer->iHp = pPlayer->iMaxHp;
+			}
+
+			cout << "체력이 회복되었습니다." << endl;
+			system("pause");
+
+		}
+		else
+		{
+			cout << "아이템이 없습니다." << endl;
+			system("pause");
+		}
+
+		break;
+
+	case 2:
+		return;
+
+	default:
+		break;
+	}
+}
 
 bool Save_Data(INFO* pPlayer)
 {
@@ -455,5 +562,3 @@ bool	Load_Data(INFO** ppPlayer)
 
 	return false;
 }
-
-
